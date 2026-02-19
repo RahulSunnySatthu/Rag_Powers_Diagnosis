@@ -1,6 +1,7 @@
 # Backend dependencies
 fastapi
 uvicorn
+python-multipart
 pdfplumber
 pytesseract
 Pillow
