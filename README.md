@@ -113,10 +113,10 @@ flowchart TD
     UI[Frontend UI]
 
     subgraph Backend["Backend"]
-        UP_PDF[/upload_pdf]
-        UP_IMG[/upload_image]
-        ASK[/ask]
-        RESET[/reset]
+        UP_PDF[upload_pdf]
+        UP_IMG[upload_image]
+        ASK[ask]
+        RESET[reset]
     end
 
     subgraph Storage["In-Memory Storage"]
