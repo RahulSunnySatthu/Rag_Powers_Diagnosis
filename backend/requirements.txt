@@ -1,0 +1,9 @@
+# Backend dependencies
+fastapi
+uvicorn
+pdfplumber
+pytesseract
+Pillow
+scikit-learn
+google-generativeai
+python-dotenv
