@@ -1,12 +1,16 @@
-import google.generativeai as genai
+from google import genai
 import os
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# Create Gemini client (NEW METHOD)
+client = genai.Client(
+    api_key=os.getenv("GEMINI_API_KEY")
+)
 
-model = genai.GenerativeModel("gemini-3-flash-preview")
+MODEL_NAME = "gemini-1.5-flash"  # Use stable production model
 
 
 def generate_medical_response(query, context, structured_data=None, mode="qa"):
@@ -51,7 +55,12 @@ Provide a direct, question-specific answer.
 """
 
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt
+        )
+
         return response.text.strip()
+
     except Exception as e:
         return f"Error generating response: {str(e)}"
