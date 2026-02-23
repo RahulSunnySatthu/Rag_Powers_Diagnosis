@@ -5,15 +5,18 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Create Gemini client (NEW METHOD)
+# Create Gemini client
 client = genai.Client(
     api_key=os.getenv("GEMINI_API_KEY")
 )
 
-MODEL_NAME = "gemini-1.5-flash"  # Use stable production model
+MODEL_NAME = "gemini-1.5-flash"
 
 
 def generate_medical_response(query, context, structured_data=None, mode="qa"):
+
+    # ⚡ Reduce prompt size impact
+    context = context[:4000]  # prevent very large context slowing response
 
     if mode == "summary":
 
@@ -21,29 +24,23 @@ def generate_medical_response(query, context, structured_data=None, mode="qa"):
 You are a medical document analysis assistant.
 
 Provide a structured summary of the report.
-
 Use only the provided context.
-Do not add any external information.
+Do not add external information.
 
 Context:
 {context}
 """
 
-    else:  # STRICT QUESTION ANSWERING MODE
-
+    else:
         prompt = f"""
 You are a medical document analysis assistant.
 
 STRICT INSTRUCTIONS:
-
 - Answer ONLY the user's question.
-- Do NOT summarize the entire report.
-- Do NOT include unrelated test values.
-- Do NOT repeat full document details.
+- Do NOT summarize entire report.
 - Base answer ONLY on provided context.
-- If the answer is not clearly present, say:
-  "The uploaded document does not contain enough information to answer this question."
-- Keep the answer concise and focused.
+- If answer is not present, say:
+  "The uploaded document does not contain enough information."
 
 User Question:
 {query}
@@ -51,7 +48,7 @@ User Question:
 Relevant Context:
 {context}
 
-Provide a direct, question-specific answer.
+Provide a concise answer.
 """
 
     try:
