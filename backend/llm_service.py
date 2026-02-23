@@ -15,8 +15,8 @@ MODEL_NAME = "gemini-1.5-flash"
 
 def generate_medical_response(query, context, structured_data=None, mode="qa"):
 
-    # ⚡ Reduce prompt size impact
-    context = context[:4000]  # prevent very large context slowing response
+    # Reduce context size for performance
+    context = context[:4000]
 
     if mode == "summary":
 
@@ -25,22 +25,26 @@ You are a medical document analysis assistant.
 
 Provide a structured summary of the report.
 Use only the provided context.
-Do not add external information.
+Do not add any external information.
 
 Context:
 {context}
 """
 
     else:
+
         prompt = f"""
 You are a medical document analysis assistant.
 
 STRICT INSTRUCTIONS:
 - Answer ONLY the user's question.
-- Do NOT summarize entire report.
+- Do NOT summarize the entire report.
+- Do NOT include unrelated test values.
+- Do NOT repeat full document details.
 - Base answer ONLY on provided context.
-- If answer is not present, say:
-  "The uploaded document does not contain enough information."
+- If the answer is not clearly present, say:
+  "The uploaded document does not contain enough information to answer this question."
+- Keep the answer concise and focused.
 
 User Question:
 {query}
@@ -48,7 +52,7 @@ User Question:
 Relevant Context:
 {context}
 
-Provide a concise answer.
+Provide a direct, question-specific answer.
 """
 
     try:
