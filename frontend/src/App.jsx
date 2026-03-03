@@ -15,6 +15,34 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { uploadPDF, uploadImage, askQuestion } from "./api";
 
+const formatReplyContent = (content) => {
+  if (!content || typeof content !== "string") return content;
+  const clean = content
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/_(.+?)_/g, "$1");
+  const lines = clean.split("\n");
+  return lines.map((line, i) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("• ") || trimmed.startsWith("- ")) {
+      const text = trimmed.replace(/^[•-]\s*/, "");
+      return (
+        <div key={i} className="flex gap-2 mt-1.5 first:mt-0">
+          <span className="text-indigo-500 mt-0.5">•</span>
+          <span>{text}</span>
+        </div>
+      );
+    }
+    return (
+      <div key={i} className={i > 0 ? "mt-3" : ""}>
+        {trimmed || <br />}
+      </div>
+    );
+  });
+};
+
 const App = () => {
   const [files, setFiles] = useState([]);
   const [query, setQuery] = useState("");
@@ -91,6 +119,37 @@ const App = () => {
 
   const removeFile = (id) => {
     setFiles(files.filter((f) => f.id !== id));
+  };
+
+  // ================= Summarize Handler =================
+  const handleSummarize = async () => {
+    if (files.length === 0) {
+      alert("Upload a document or image first.");
+      return;
+    }
+
+    const userMessage = {
+      id: Date.now(),
+      role: "user",
+      content: "Summarize my report"
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    setIsProcessing(true);
+
+    try {
+      const res = await askQuestion("summarize my report");
+      const aiMessage = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: res.data.response,
+        confidence: res.data.confidence_score
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch {
+      alert("Summarization failed");
+    }
+
+    setIsProcessing(false);
   };
 
   return (
@@ -172,6 +231,17 @@ const App = () => {
               Indexed Files
             </h3>
 
+            {files.length > 0 && (
+              <button
+                onClick={handleSummarize}
+                disabled={isProcessing}
+                className="w-full mb-4 flex items-center justify-center gap-2 bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                <FileText size={18} />
+                Summarize
+              </button>
+            )}
+
             {files.length === 0 ? (
               <p className="text-sm text-slate-400">No files yet</p>
             ) : (
@@ -205,19 +275,29 @@ const App = () => {
                 }`}
               >
                 <div
-                  className={`max-w-xl px-6 py-4 rounded-3xl shadow-lg ${
+                  className={`max-w-xl ${
                     msg.role === "user"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-white text-slate-800"
+                      ? "bg-indigo-600 text-white px-6 py-4 rounded-2xl rounded-br-md shadow-md"
+                      : "bg-white text-slate-700 px-6 py-5 rounded-2xl rounded-bl-md shadow-md border border-slate-100"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap text-sm">
-                    {msg.content}
-                  </p>
+                  <div
+                    className={`leading-[1.65] ${
+                      msg.role === "user"
+                        ? "text-[15px] whitespace-pre-wrap"
+                        : "text-[15px] text-slate-800 [word-spacing:0.02em]"
+                    }`}
+                  >
+                    {msg.role === "assistant"
+                      ? formatReplyContent(msg.content)
+                      : msg.content}
+                  </div>
 
                   {msg.role === "assistant" && msg.confidence !== undefined && (
-                    <div className="mt-3 text-xs font-bold text-indigo-600">
-                      Confidence: {(msg.confidence * 100).toFixed(1)}%
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
+                      <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
+                        {(msg.confidence * 100).toFixed(0)}% confidence
+                      </span>
                     </div>
                   )}
                 </div>
@@ -228,8 +308,8 @@ const App = () => {
           {/* Typing */}
           {isProcessing && (
             <div className="flex justify-start">
-              <div className="bg-white px-6 py-4 rounded-3xl shadow">
-                <span className="animate-pulse text-indigo-600">
+              <div className="bg-white px-6 py-4 rounded-2xl rounded-bl-md shadow-md border border-slate-100">
+                <span className="animate-pulse text-indigo-600 text-sm">
                   Generating response...
                 </span>
               </div>
@@ -237,13 +317,13 @@ const App = () => {
           )}
 
           {/* Input Bar */}
-          <div className="bg-white/90 p-4 rounded-3xl shadow-xl flex gap-4">
+          <div className="bg-white/90 p-4 rounded-2xl shadow-lg border border-slate-100 flex gap-3">
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Ask about your uploaded reports..."
-              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
+              className="flex-1 px-5 py-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 placeholder:text-slate-400"
             />
             <button
               onClick={handleSearch}
